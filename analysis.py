@@ -4,6 +4,8 @@ import numpy as np
 import time
 # import matplotlib.pyplot as plt
 from multiprocessing import Pool
+from sys import argv
+import os
 
 def mapper_callhome(x):
     return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
@@ -114,27 +116,27 @@ def subject_summary(data, other):
     return DataFrame(placeholder)
     
 #Load ADOS data
-def loaddata():
-    return pd.read_csv("processed_corpora/ERPA.csv")
+def loaddata(f):
+    return pd.read_csv(f)
 
 #Load Language Model data
-def loadLMs():
-    return pd.read_csv("unsmoothed_probabilities.csv")
+def loadLMs(f):
+    return pd.read_csv(f)
 
-def run_bootstrap:
-    pool = Pool(processes=100)
-    n = 10
+def run_bootstrap(N,n):
+    pool = Pool(processes=N)
     outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
-    outcomes_all.to_csv("bootstrap_"+types+"_all_words_N=100_n="+str(n)+".csv")
+    outcomes_all.to_csv("outputfiles/bootstrap_"+types+"_all_words_n="+str(n)+".csv")
     outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap]}
-    [v.to_csv("bootstrap_no_fw_"+k+"_N=100_n="str(n)+".csv") for k, v in outcomes_FW]
+    [v.to_csv("outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+".csv") for k, v in outcomes_FW]
 
 if __name__ == "__main__":
-    erpa = loaddata()
-    probs = loadLMs()
+    model_descrip = argv[4]
+    erpa = loaddata(argv[1])
+    probs = loadLMs(argv[2])
     corpora = ['callhome', 'TAL', 'WSJ']
     #Tokens or types?
-    tokens = True
+    tokens = bool(int(argv[3]))
 
     #Mark out which words are in the 99th percentile for frequency
     probs = define_FW(probs,corpora)
@@ -144,13 +146,13 @@ if __name__ == "__main__":
 
     #Create a table that has each data point and its probability values
     erpaprobs = fetch_probs(probs, erpa, tokens=tokens)
-    erpaprobs.to_csv("ERPA-tokens="+str(tokens)+"-stats.csv", index=False)
+    erpaprobs.to_csv("outputfiles/ERPA-tokens="+str(tokens)+"-stats-"+model_descrip+".csv", index=False)
 
     #Create a table that removes the function words as defined.
     erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in corpora}
 
     #Save all those guys
     for k, v in erpaprobs_noFW:
-        v.to_csv("ERPA-stats-tokens="+str(tokens)+"-noFW-"+k+".csv", index=False)
+        v.to_csv("outputfiles/ERPA-stats-tokens="+str(tokens)+"-noFW-"+k+".csv", index=False)
 
-
+    run_bootstrap(100,10000)
