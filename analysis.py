@@ -126,9 +126,9 @@ def loadLMs(f):
 def run_bootstrap(N,n):
     pool = Pool(processes=N)
     outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
-    outcomes_all.to_csv("outputfiles/bootstrap_"+types+"_all_words_n="+str(n)+".csv")
+    outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap]}
-    [v.to_csv("outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+".csv") for k, v in outcomes_FW]
+    [v.to_csv("outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+"_"+model_descrip+".csv") for k, v in outcomes_FW]
 
 if __name__ == "__main__":
     model_descrip = argv[4]
@@ -146,13 +146,13 @@ if __name__ == "__main__":
 
     #Create a table that has each data point and its probability values
     erpaprobs = fetch_probs(probs, erpa, tokens=tokens)
-    erpaprobs.to_csv("outputfiles/ERPA-tokens="+str(tokens)+"-stats-"+model_descrip+".csv", index=False)
+    erpaprobs.to_csv("outputfiles/ERPA-stats_"+model_descrip+".csv", index=False)
 
     #Create a table that removes the function words as defined.
     erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in corpora}
 
     #Save all those guys
     for k, v in erpaprobs_noFW:
-        v.to_csv("outputfiles/ERPA-stats-tokens="+str(tokens)+"-noFW-"+k+".csv", index=False)
+        v.to_csv("outputfiles/ERPA-stats-noFW-"+k+"_"+model_descrip+".csv", index=False)
 
     run_bootstrap(100,10000)
