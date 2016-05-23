@@ -1,0 +1,8 @@
+Executable      = ./analysis.sh
+Universe        = vanilla
+output  = log/bootstrap_out
+error   = log/boostrap_error
+Log     = log/bootstrap_log
+rank = random(100)
+getenv = true
+Queue                
