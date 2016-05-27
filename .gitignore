@@ -1,0 +1,8 @@
+*.ipynb
+*.csv
+*WSJ*
+*.png
+*.pages
+*.pdf
+*.gif
+language_models/*
