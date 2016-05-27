@@ -6,6 +6,12 @@ import time
 from multiprocessing import Pool
 from sys import argv
 import os
+import logging
+logger = logging.getLogger()
+formatter = logging.Formatter(
+        '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+handler.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
 
 def mapper_callhome(x):
     return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
@@ -128,15 +134,26 @@ def run_bootstrap(N,n):
     outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
     outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap]}
-    [v.to_csv("outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+"_"+model_descrip+".csv") for k, v in outcomes_FW]
+    for k, v in outcomes_FW.items():
+        vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+"_"+model_descrip+".csv"
+        v.to_csv(vfn, index=False)
+        if not os.path.exists(vfn):
+            logger.debug("Failed to save"+vfn)
+        else:
+            logger.debug(vfn+" successfully saved")
+        
 
 if __name__ == "__main__":
     model_descrip = argv[4]
+    logger.debug("Beginning "+model_descrip+"iteration of model")
     erpa = loaddata(argv[1])
     probs = loadLMs(argv[2])
     corpora = ['callhome', 'TAL', 'WSJ']
     #Tokens or types?
     tokens = bool(int(argv[3]))
+    
+    if not os.path.isdir("outputfiles"):
+        os.mkdir("outputfiles")
 
     #Mark out which words are in the 99th percentile for frequency
     probs = define_FW(probs,corpora)
@@ -146,13 +163,24 @@ if __name__ == "__main__":
 
     #Create a table that has each data point and its probability values
     erpaprobs = fetch_probs(probs, erpa, tokens=tokens)
-    erpaprobs.to_csv("outputfiles/ERPA-stats_"+model_descrip+".csv", index=False)
+    erpaprobsfn = "outputfiles/ERPA-stats_"+model_descrip+".csv"
+    erpaprobs.to_csv(erpaprobsfn, index=False)
+    if not os.path.exists(erpaprobsfn):
+        logger.debug("Failed to save erpa matrix")
+    else:
+        logger.debug("Saved Erpa matrix")
+    
 
     #Create a table that removes the function words as defined.
     erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in corpora}
 
     #Save all those guys
     for k, v in erpaprobs_noFW:
-        v.to_csv("outputfiles/ERPA-stats-noFW-"+k+"_"+model_descrip+".csv", index=False)
+        vfn = "outputfiles/ERPA-stats-noFW-"+k+"_"+model_descrip+".csv"
+        v.to_csv(vfn, index=False)
+        if not os.path.exists(vfn):
+            logger.debug("Failed to save"+vfn)
+        else:
+            logger.debug(vfn+" successfully saved")
 
     run_bootstrap(100,10000)
