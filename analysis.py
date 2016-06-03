@@ -135,7 +135,7 @@ def run_bootstrap(N,n):
     outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap]}
     for k, v in outcomes_FW.items():
-        vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="str(n)+"_"+model_descrip+".csv"
+        vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
         v.to_csv(vfn, index=False)
         if not os.path.exists(vfn):
             logger.debug("Failed to save"+vfn)
