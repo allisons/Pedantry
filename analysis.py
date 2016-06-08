@@ -7,6 +7,7 @@ from multiprocessing import Pool
 from sys import argv
 import os
 import logging
+import time
 logging.basicConfig()
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -163,7 +164,7 @@ def run_bootstrap(N,n, erpaprobs):
             logger.debug(vfn+" successfully saved")
         
 
-def create_erpaprobs(args):
+def create_erpaprobs(model_descrip, args):
     """
     Runs data-creation side of work - args could include the file names for the data and the language models
     """
@@ -178,7 +179,7 @@ def create_erpaprobs(args):
 
     #Mark out which words are in the 99th percentile for frequency
     probs = define_FW(probs,corpora)
-    probs.to_csv("outfiles/probs_defined_FW.csv", index=False)
+    probs.to_csv("outputfiles/probs_defined_FW.csv", index=False)
     erpaprobs = fetch_probs(probs, erpa, tokens=tokens)
     erpaprobsfn = "outputfiles/ERPA-stats_"+model_descrip+".csv"
     erpaprobs.to_csv(erpaprobsfn, index=False)
@@ -197,12 +198,15 @@ def bootstrap(args):
 if __name__ == "__main__":
     model_descrip = argv[1]
     logger.debug("Beginning "+model_descrip+"iteration of model")
+    handler.flush()
     if argv[2] == "data":
-        create_erpaprobs(argv[3:])
+        create_erpaprobs(model_descrip, argv[3:])
     if argv[2] == "bootstrap":
         bootstrap(argv[3:])
     if argv[2] = "test":
+        time.sleep(45)
         logger.debug("This test was successful")
+        handler.flush()
     else:
         print "Terminating after doing basically nothing, so oops"
     
