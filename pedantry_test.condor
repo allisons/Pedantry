@@ -1,0 +1,8 @@
+Executable      = ./test.sh
+Universe        = vanilla
+output  = log/test_out
+error   = log/test_err
+Log     = log/test_log
+rank = random(100)
+getenv = true
+Queue                
