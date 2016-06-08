@@ -153,7 +153,7 @@ def run_bootstrap(N,n, erpaprobs):
     outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
     outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     logger.debug("Full language model bootstrap complete")
-    outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap]}
+    outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap}
     for k, v in outcomes_FW.items():
         vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
         logger.debug("beginning "+k+" function words removed bootstrap")
