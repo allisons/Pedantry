@@ -199,7 +199,7 @@ if __name__ == "__main__":
     model_descrip = argv[1]
     logger.debug("Beginning "+model_descrip+"iteration of model")
     handler.flush()
-    if len(argv) >= 2
+    if len(argv) >= 2:
         if argv[2] == "data":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[2] == "bootstrap":
