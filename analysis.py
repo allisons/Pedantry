@@ -203,7 +203,7 @@ if __name__ == "__main__":
         create_erpaprobs(model_descrip, argv[3:])
     if argv[2] == "bootstrap":
         bootstrap(argv[3:])
-    if argv[2] = "test":
+    if argv[2] == "test":
         time.sleep(45)
         logger.debug("This test was successful")
         handler.flush()
