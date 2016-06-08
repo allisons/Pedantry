@@ -17,11 +17,20 @@ logger.setLevel(logging.DEBUG)
 
 
 def define_FW(probs, cols):
+    """
+    Returns a panda.DataFrame with additional columns
+    with boolean values for whether that word is a "function word"
+     
+    """
     for col in cols:
         probs[col+"FW"] = probs[col] > np.percentile(probs[col], 99)
     return probs
     
 def fetch_probs(probs, erpa, tokens=False):
+    """
+    Returns a panda.DataFrame where the rows are each word from the speech sample and that word's
+    unigram value based on the probability matrix provided.
+    """
     placeholder = []
     for i, row in erpa.iterrows():
         if tokens:
@@ -39,12 +48,19 @@ def fetch_probs(probs, erpa, tokens=False):
     return DataFrame(placeholder)   
     
 def FW_remove(data, col_1, col_2):
+    """
+    Returns a panda.DataFrame with words that are function words in both corpora provided
+    """
     fw_groups = data.groupby([col_1, col_2])
     return pd.concat([fw_groups.get_group((False,False)),fw_groups.get_group((False,True)),
                       fw_groups.get_group((True,False))])
 
 
 def euclideanfit(x,y):
+    """
+    Returns a 2-tuple equal to the slope and intercept of a euclidean-fit line
+    """
+    
     cov_mat = np.cov(x,y)
     _, eigvec = np.ligalg.ein(cov_mat)
     a = eigvec[2,1]/eigec[1,2]
@@ -53,6 +69,9 @@ def euclideanfit(x,y):
     
     
 def subject_summary(data, other):
+    """
+    Returns a pandas.DataFrame summarizing the mean pedantry values
+    """
     placeholder = []
     subjects = data.groupby("id")
     subjects_noFW = pd.read_csv("ERPA-stats-types-noFW-"+other+"FW.csv").groupby('id')
@@ -69,17 +88,36 @@ def subject_summary(data, other):
     return DataFrame(placeholder)    
 
 def run_bootstrap(N,n, erpaprobs):
+    """
+    Does not return anything.  Runs a bootstrap analysis with various models and saves them to .csv
+    """
     def mapper_callhome(x):
+        """
+        Runs a bootstrap analysis with function-word-removed callhome data as the y-axis
+        """
         return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
     def mapper_TAL(x):
+        """
+        Runs a bootstrap analysis with function-word-removed TAL data as the y-axis
+        """
         return bootstrap(erpaprobs_noFW['TAL'], ["TAL"], 100, all=False)
 
     def mapper_WSJ(x):
+        """
+        Runs a bootstrap analysis with function-word-removed WSJ as the y-axis
+        """
         return bootstrap(erpaprobs_noFW['WSJ'], ["WSJ"], 100, all=False)
 
     def mapper_all(x):
+        """
+        Runs a bootstrap analysis wiht all three corpora and full language model for all three corpora
+        """
         return bootstrap(erpaprobs, ["callhome", "TAL", "WSJ"], 100)       
     def bootstrap(erpa_data, cols, sample_size, all=True):
+        """
+        Returns a panda.Series that is the summary of a sample_size sample taken from
+        each subject
+        """
         subjects = erpa_data.groupby('id')
         placeholder = []
         for name, group in subjects:
@@ -126,6 +164,9 @@ def run_bootstrap(N,n, erpaprobs):
         
 
 def create_erpaprobs(args):
+    """
+    Runs data-creation side of work - args could include the file names for the data and the language models
+    """
     erpa = pd.read_csv(args[0])
     probs = pd.read_csv(args[1])
     corpora = ['callhome', 'TAL', 'WSJ']
@@ -146,7 +187,10 @@ def create_erpaprobs(args):
     else:
         logger.debug("Saved Erpa matrix")
     
-def run_bootstraps(args):
+def bootstrap(args):
+    """
+    Using data created previously, runs multiprocessing bootstraps with 100 processes 10000 times total
+    """
     erpaprobs = pd.read_csv(args[0])    
     run_bootstrap(100,10000, erpaprobs)
 
@@ -156,7 +200,7 @@ if __name__ == "__main__":
     if argv[2] == "data":
         create_erpaprobs(argv[3:])
     if argv[2] == "bootstrap":
-        run_bootstraps(argv[3:])
+        bootstrap(argv[3:])
     if argv[2] = "test":
         logger.debug("This test was successful")
     else:
