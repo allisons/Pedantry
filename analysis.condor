@@ -1,8 +1,8 @@
-Executable      = ./analysis.sh
+Executable      = ./create_data.sh
 Universe        = vanilla
-output  = log/bootstrap_out
-error   = log/boostrap_error
-Log     = log/bootstrap_log
+output  = log/create_data_out
+error   = log/create_data_error
+Log     = log/create_data_log
 rank = random(100)
 getenv = true
 Queue                
