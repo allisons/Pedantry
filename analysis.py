@@ -197,12 +197,12 @@ def bootstrap(args):
 
 if __name__ == "__main__":
     if len(argv) > 2:
-        model_descrip = argv[1]
+        model_descrip = argv[2]
         logger.debug("Beginning "+model_descrip+" iteration of model")
         handler.flush()
-        if argv[2] == "data":
+        if argv[1] == "data":
             create_erpaprobs(model_descrip, argv[3:])
-        if argv[2] == "bootstrap":
+        if argv[1] == "bootstrap":
             bootstrap(argv[3:])
     elif argv[1] == "test":
         time.sleep(45)
