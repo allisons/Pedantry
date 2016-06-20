@@ -8,6 +8,7 @@ from sys import argv
 import os
 import logging
 import time
+import re
 logging.basicConfig()
 logger = logging.getLogger()
 handler = logging.StreamHandler()
@@ -15,6 +16,8 @@ formatter = logging.Formatter(
         '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
 handler.setFormatter(formatter)
 logger.setLevel(logging.DEBUG)
+
+cols = ['callhome', 'TAL', 'WSJ']
 
 
 def define_FW(probs, cols):
@@ -67,29 +70,6 @@ def euclideanfit(x,y):
     a = eigvec[2,1]/eigec[1,2]
     b = np.mean(y) - a*np.mean(x)
     return a, b
-    
-def mapper_callhome(x):
-    """
-    Runs a bootstrap analysis with function-word-removed callhome data as the y-axis
-    """
-    return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
-def mapper_TAL(x):
-    """
-    Runs a bootstrap analysis with function-word-removed TAL data as the y-axis
-    """
-    return bootstrap(erpaprobs_noFW['TAL'], ["TAL"], 100, all=False)
-
-def mapper_WSJ(x):
-    """
-    Runs a bootstrap analysis with function-word-removed WSJ as the y-axis
-    """
-    return bootstrap(erpaprobs_noFW['WSJ'], ["WSJ"], 100, all=False)
-
-def mapper_all(x):
-    """
-    Runs a bootstrap analysis with all three corpora and full language model for all three corpora
-    """
-    return bootstrap(erpaprobs, ["callhome", "TAL", "WSJ"], 100)    
     
 def mapper(x):
     return bootstrap(x[0], x[1], x[2], all=x[3])
@@ -146,33 +126,27 @@ def bootstrap(erpa_data, cols, sample_size, all=True):
     return Series(values)
     
 
-def run_bootstrap(N,n, erpaprobs):
+def run_bootstrap(N,n, erpaprobs, model_descrip):
     """
     Does not return anything.  Runs a bootstrap analysis with various models and saves them to .csv
     """
-       
     
-    mappermap = {'callhome':mapper_callhome,'TAL':mapper_TAL, 'WSJ':mapper_WSJ}
     pool = Pool(processes=N)
-    erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in mappermap.keys()}
+    erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in cols}
     logger.debug("Beginning full language model set bootstrap")
     handler.flush()
-    args = [(erpaprobs, ['callhome', 'TAL', 'WSJ'], 100, True) for _ in xrange(n)]
+    args = [(erpaprobs, cols, 100, True) for _ in xrange(n)]
     outcomes_all = DataFrame(pool.map(mapper, args))
-    print outcomes_all
-    # outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
-    # logger.debug("Full language model bootstrap complete")
-    # handler.flush()
-    # outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap}
-    # for k, v in outcomes_FW.items():
-    #     vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
-    #     logger.debug("beginning "+k+" function words removed bootstrap")
-    #     v.to_csv(vfn, index=False)
-    #     if not os.path.exists(vfn):
-    #         logger.debug("Failed to save"+vfn)
-    #     else:
-    #         logger.debug(vfn+" successfully saved")
-        
+    outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(N)+"_"+model_descrip+".csv")
+    logger.debug("Full language model bootstrap complete")
+    handler.flush()
+    for col in cols:
+        args = [(erpaprobs_noFW[col], [col], 100, False) for _ in xrange(n)]
+        outcomes = DataFrame(pool.map(mapper, args))
+        outcomes.to_csv("outputfiles/bootstrap_"+col+"_noFW_n="+str(N)+"_"+model_descrip+".csv")
+        logger.debug("Finished with "+col+" version of function word removal")
+        handler.flush()
+
 
 def create_erpaprobs(model_descrip, args):
     """
@@ -204,13 +178,14 @@ def create_erpaprobs(model_descrip, args):
 if __name__ == "__main__":
     if len(argv) > 2:
         model_descrip = argv[2]
+        model_descrip = re.sub(" ", "_", model_descrip)
         logger.debug("Beginning "+model_descrip+" iteration of model")
         handler.flush()
         if argv[1] == "data":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[1] == "bootstrap":
             erpaprobs = pd.read_csv(argv[3])
-            run_bootstrap(2,10,erpaprobs)
+            run_bootstrap(6,100,erpaprobs, model_descrip)
     elif argv[1] == "test":
         time.sleep(45)
         logger.debug("This test was successful")
