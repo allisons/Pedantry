@@ -68,7 +68,29 @@ def euclideanfit(x,y):
     b = np.mean(y) - a*np.mean(x)
     return a, b
     
-    
+def mapper_callhome(x):
+    """
+    Runs a bootstrap analysis with function-word-removed callhome data as the y-axis
+    """
+    return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
+def mapper_TAL(x):
+    """
+    Runs a bootstrap analysis with function-word-removed TAL data as the y-axis
+    """
+    return bootstrap(erpaprobs_noFW['TAL'], ["TAL"], 100, all=False)
+
+def mapper_WSJ(x):
+    """
+    Runs a bootstrap analysis with function-word-removed WSJ as the y-axis
+    """
+    return bootstrap(erpaprobs_noFW['WSJ'], ["WSJ"], 100, all=False)
+
+def mapper_all(x):
+    """
+    Runs a bootstrap analysis wiht all three corpora and full language model for all three corpora
+    """
+    return bootstrap(erpaprobs, ["callhome", "TAL", "WSJ"], 100)    
+
 def subject_summary(data, other):
     """
     Returns a pandas.DataFrame summarizing the mean pedantry values
@@ -88,63 +110,44 @@ def subject_summary(data, other):
         placeholder.append(values)
     return DataFrame(placeholder)    
 
+def bootstrap(erpa_data, cols, sample_size, all=True):
+    """
+    Returns a panda.Series that is the summary of a sample_size sample taken from
+    each subject
+    """
+    subjects = erpa_data.groupby('id')
+    placeholder = []
+    for name, group in subjects:
+        dx = np.random.choice(group['dx'])
+        idx = np.random.choice(group.index, size = sample_size)
+        selection = group.loc[idx,:]
+        if all:
+            subset = "_all"
+        else:
+            subset = "_noFW"
+        values = {}
+        for col in cols:
+            values[col+subset] = np.mean(selection[col])-np.mean(selection["child"])
+        values['dx'] = dx
+        assert isinstance(dx, str)
+        values['id'] = name
+        assert isinstance(values['id'], str)
+        values = Series(values)
+        placeholder.append(values)
+    subjectstats = DataFrame(placeholder)
+    dxgroups = subjectstats.groupby("dx")
+    values = {}
+    for name, group in dxgroups:
+        for col in cols:
+            values[col+"_"+name] = np.mean(group[col+subset])
+    return Series(values)
+    
+
 def run_bootstrap(N,n, erpaprobs):
     """
     Does not return anything.  Runs a bootstrap analysis with various models and saves them to .csv
     """
-    def mapper_callhome(x):
-        """
-        Runs a bootstrap analysis with function-word-removed callhome data as the y-axis
-        """
-        return bootstrap(erpaprobs_noFW['callhome'], ["callhome"], 100, all=False)
-    def mapper_TAL(x):
-        """
-        Runs a bootstrap analysis with function-word-removed TAL data as the y-axis
-        """
-        return bootstrap(erpaprobs_noFW['TAL'], ["TAL"], 100, all=False)
-
-    def mapper_WSJ(x):
-        """
-        Runs a bootstrap analysis with function-word-removed WSJ as the y-axis
-        """
-        return bootstrap(erpaprobs_noFW['WSJ'], ["WSJ"], 100, all=False)
-
-    def mapper_all(x):
-        """
-        Runs a bootstrap analysis wiht all three corpora and full language model for all three corpora
-        """
-        return bootstrap(erpaprobs, ["callhome", "TAL", "WSJ"], 100)       
-    def bootstrap(erpa_data, cols, sample_size, all=True):
-        """
-        Returns a panda.Series that is the summary of a sample_size sample taken from
-        each subject
-        """
-        subjects = erpa_data.groupby('id')
-        placeholder = []
-        for name, group in subjects:
-            dx = np.random.choice(group['dx'])
-            idx = np.random.choice(group.index, size = sample_size)
-            selection = group.loc[idx,:]
-            if all:
-                subset = "_all"
-            else:
-                subset = "_noFW"
-            values = {}
-            for col in cols:
-                values[col+subset] = np.mean(selection[col])-np.mean(selection["child"])
-            values['dx'] = dx
-            assert isinstance(dx, str)
-            values['id'] = name
-            assert isinstance(values['id'], str)
-            values = Series(values)
-            placeholder.append(values)
-        subjectstats = DataFrame(placeholder)
-        dxgroups = subjectstats.groupby("dx")
-        values = {}
-        for name, group in dxgroups:
-            for col in cols:
-                values[col+"_"+name] = np.mean(group[col+subset])
-        return Series(values)
+       
     
     mappermap = {'callhome':mapper_callhome,'TAL':mapper_TAL, 'WSJ':mapper_WSJ}
     pool = Pool(processes=N)
