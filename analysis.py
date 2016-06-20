@@ -158,7 +158,7 @@ def run_bootstrap(N,n, erpaprobs):
     logger.debug("Beginning full language model set bootstrap")
     handler.flush()
     args = [(erpaprobs, ['callhome', 'TAL', 'WSJ'], 100, True) for _ in xrange(n)]
-    outcomes_all = DataFrame(pool.map(mapper, args)
+    outcomes_all = DataFrame(pool.map(mapper, args))
     print outcomes_all
     # outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     # logger.debug("Full language model bootstrap complete")
