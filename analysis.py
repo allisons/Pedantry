@@ -150,18 +150,20 @@ def run_bootstrap(N,n, erpaprobs):
     pool = Pool(processes=N)
     erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in mappermap.keys()}
     logger.debug("Beginning full language model set bootstrap")
+    handler.flush()
     outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
     outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     logger.debug("Full language model bootstrap complete")
-    outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap}
-    for k, v in outcomes_FW.items():
-        vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
-        logger.debug("beginning "+k+" function words removed bootstrap")
-        v.to_csv(vfn, index=False)
-        if not os.path.exists(vfn):
-            logger.debug("Failed to save"+vfn)
-        else:
-            logger.debug(vfn+" successfully saved")
+    handler.flush()
+    # outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap}
+    # for k, v in outcomes_FW.items():
+    #     vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
+    #     logger.debug("beginning "+k+" function words removed bootstrap")
+    #     v.to_csv(vfn, index=False)
+    #     if not os.path.exists(vfn):
+    #         logger.debug("Failed to save"+vfn)
+    #     else:
+    #         logger.debug(vfn+" successfully saved")
         
 
 def create_erpaprobs(model_descrip, args):
@@ -187,13 +189,14 @@ def create_erpaprobs(model_descrip, args):
         logger.debug("Failed to save erpa matrix")
     else:
         logger.debug("Saved Erpa matrix")
+    handler.flush()
     
 def bootstrap(args):
     """
     Using data created previously, runs multiprocessing bootstraps with 100 processes 10000 times total
     """
     erpaprobs = pd.read_csv(args[0])    
-    run_bootstrap(100,10000, erpaprobs)
+    run_bootstrap(2,10, erpaprobs)
 
 if __name__ == "__main__":
     if len(argv) > 2:
