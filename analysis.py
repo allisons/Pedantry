@@ -185,7 +185,7 @@ if __name__ == "__main__":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[1] == "bootstrap":
             erpaprobs = pd.read_csv(argv[3])
-            run_bootstrap(6,100,erpaprobs, model_descrip)
+            run_bootstrap(25,1000,erpaprobs, model_descrip)
     elif argv[1] == "test":
         time.sleep(45)
         logger.debug("This test was successful")
