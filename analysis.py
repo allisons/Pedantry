@@ -87,9 +87,12 @@ def mapper_WSJ(x):
 
 def mapper_all(x):
     """
-    Runs a bootstrap analysis wiht all three corpora and full language model for all three corpora
+    Runs a bootstrap analysis with all three corpora and full language model for all three corpora
     """
     return bootstrap(erpaprobs, ["callhome", "TAL", "WSJ"], 100)    
+    
+def mapper(x):
+    return bootstrap(x[0], x[1], x[2], all=x[3])
 
 def subject_summary(data, other):
     """
@@ -154,7 +157,9 @@ def run_bootstrap(N,n, erpaprobs):
     erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in mappermap.keys()}
     logger.debug("Beginning full language model set bootstrap")
     handler.flush()
-    outcomes_all = DataFrame(pool.map(mapper_all, xrange(3)))
+    args = [(erpaprobs, ['callhome', 'TAL', 'WSJ'], 100, True) for _ in xrange(n)]
+    outcomes_all = DataFrame(pool.map(mapper, args)
+    print outcomes_all
     # outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
     # logger.debug("Full language model bootstrap complete")
     # handler.flush()
