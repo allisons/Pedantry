@@ -199,12 +199,7 @@ def create_erpaprobs(model_descrip, args):
         logger.debug("Saved Erpa matrix")
     handler.flush()
     
-def bootstrap(args):
-    """
-    Using data created previously, runs multiprocessing bootstraps with 100 processes 10000 times total
-    """
-    erpaprobs = pd.read_csv(args[0])    
-    run_bootstrap(2,10, erpaprobs)
+
 
 if __name__ == "__main__":
     if len(argv) > 2:
@@ -214,7 +209,8 @@ if __name__ == "__main__":
         if argv[1] == "data":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[1] == "bootstrap":
-            bootstrap(argv[3:])
+            erpaprobs = pd.read_csv(argv[2])
+            run_bootstrap(2,10,erpaprobs)
     elif argv[1] == "test":
         time.sleep(45)
         logger.debug("This test was successful")
