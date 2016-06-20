@@ -209,7 +209,7 @@ if __name__ == "__main__":
         if argv[1] == "data":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[1] == "bootstrap":
-            erpaprobs = pd.read_csv(argv[2])
+            erpaprobs = pd.read_csv(argv[3])
             run_bootstrap(2,10,erpaprobs)
     elif argv[1] == "test":
         time.sleep(45)
