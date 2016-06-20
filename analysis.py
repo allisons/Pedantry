@@ -148,13 +148,14 @@ def run_bootstrap(N,n, erpaprobs):
     
     mappermap = {'callhome':mapper_callhome,'TAL':mapper_TAL, 'WSJ':mapper_WSJ}
     pool = Pool(processes=N)
-    erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in mappermap.keys()}
-    logger.debug("Beginning full language model set bootstrap")
-    handler.flush()
-    outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
-    outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
-    logger.debug("Full language model bootstrap complete")
-    handler.flush()
+    logger.debug("Pooling begun")
+    # erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in mappermap.keys()}
+    # logger.debug("Beginning full language model set bootstrap")
+    # handler.flush()
+    # outcomes_all = DataFrame(pool.map(mapper_all, xrange(n)))
+    # outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(n)+"_"+model_descrip+".csv")
+    # logger.debug("Full language model bootstrap complete")
+    # handler.flush()
     # outcomes_FW = {k:DataFrame(pool.map(v, xrange(n))) for k, v in mappermap}
     # for k, v in outcomes_FW.items():
     #     vfn = "outputfiles/bootstrap_no_fw_"+k+"_n="+str(n)+"_"+model_descrip+".csv"
