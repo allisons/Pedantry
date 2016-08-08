@@ -17,13 +17,14 @@ formatter = logging.Formatter(
 handler.setFormatter(formatter)
 logger.setLevel(logging.DEBUG)
 
-cols = ['callhome', 'TAL', 'WSJ']
 
 
 def define_FW(probs, cols):
     """
     Returns a panda.DataFrame with additional columns
     with boolean values for whether that word is a "function word"
+    Function word is defined as a word that appears in the top 1 percent
+    most frequent words fo a given corpus.
      
     """
     for col in cols:
@@ -33,9 +34,10 @@ def define_FW(probs, cols):
 def fetch_probs(probs, erpa, tokens=False):
     """
     Returns a panda.DataFrame where the rows are each word from the speech sample and that word's
-    unigram value based on the probability matrix provided.
+    unigram value based on the probability matrix provided.  Default will only retreive each word
+    from a given participant once.
     """
-    placeholder = []
+    placeholder = [] #collecting rows in a list and returning in a dataframe                          gives more reliable rows/col alignmnet
     for i, row in erpa.iterrows():
         if tokens:
             tokens = row['text'].split()
@@ -72,7 +74,7 @@ def euclideanfit(x,y):
     return a, b
     
 def mapper(x):
-    return bootstrap(x[0], x[1], x[2], all=x[3])
+    return one_bootstrap(x)
 
 def subject_summary(data, other):
     """
@@ -93,60 +95,33 @@ def subject_summary(data, other):
         placeholder.append(values)
     return DataFrame(placeholder)    
 
-def bootstrap(erpa_data, cols, sample_size, all=True):
+def one_bootstrap(data, function, *args, **kwargs):
     """
-    Returns a panda.Series that is the summary of a sample_size sample taken from
-    each subject
+    Returns a boostrapped metric (provided as a python method reference in function) 
     """
-    subjects = erpa_data.groupby('id')
+    subjects = data.groupby(data.columns[0])
+    
     placeholder = []
     for name, group in subjects:
-        dx = np.random.choice(group['dx'])
-        idx = np.random.choice(group.index, size = sample_size)
-        selection = group.loc[idx,:]
-        if all:
-            subset = "_all"
-        else:
-            subset = "_noFW"
-        values = {}
-        for col in cols:
-            values[col+subset] = np.mean(selection[col])-np.mean(selection["child"])
-        values['dx'] = dx
-        assert isinstance(dx, str)
-        values['id'] = name
-        assert isinstance(values['id'], str)
-        values = Series(values)
-        placeholder.append(values)
-    subjectstats = DataFrame(placeholder)
-    dxgroups = subjectstats.groupby("dx")
-    values = {}
-    for name, group in dxgroups:
-        for col in cols:
-            values[col+"_"+name] = np.mean(group[col+subset])
-    return Series(values)
+        logger.debug("Beginning bootstrap for {0}".format(name))
+        handler.flush()    
+        values = group.ix[:,1]
+        sample_set = draw_sample_report_metric(values, function, *args, **kwargs)
+        line = Series([name,sample_set])
+        placeholder.append(line)
+    return DataFrame(placeholder)
+        
     
 
-def run_bootstrap(N,n, erpaprobs, model_descrip):
+def run_bootstrap(N, n, data, function, *args, **kwargs):
     """
-    Does not return anything.  Runs a bootstrap analysis with various models and saves them to .csv
+    Returns a DataFrame with the results of n bootstrap sampling using the provided metric function
     """
-    
     pool = Pool(processes=N)
-    erpaprobs_noFW = {col : FW_remove(erpaprobs, 'childFW', col+"FW") for col in cols}
-    logger.debug("Beginning full language model set bootstrap")
-    handler.flush()
-    args = [(erpaprobs, cols, 100, True) for _ in xrange(n)]
-    outcomes_all = DataFrame(pool.map(mapper, args))
-    outcomes_all.to_csv("outputfiles/bootstrap_all_words_n="+str(N)+"_"+model_descrip+".csv")
-    logger.debug("Full language model bootstrap complete")
-    handler.flush()
-    for col in cols:
-        args = [(erpaprobs_noFW[col], [col], 100, False) for _ in xrange(n)]
-        outcomes = DataFrame(pool.map(mapper, args))
-        outcomes.to_csv("outputfiles/bootstrap_"+col+"_noFW_n="+str(N)+"_"+model_descrip+".csv")
-        logger.debug("Finished with "+col+" version of function word removal")
-        handler.flush()
-
+    X = [(data, function) + tuple([a for a in args if args]) for _ in xrange(n)]
+    return DataFrame(pool.map(mapper, X))
+    
+    
 
 def create_erpaprobs(model_descrip, args):
     """
@@ -174,9 +149,26 @@ def create_erpaprobs(model_descrip, args):
     handler.flush()
     
 
+def draw_sample_report_metric(data, function, Nsize=100, *args, **kwargs):
+    """
+    Samples data with a random subset and using a provided function, 
+    reports whatever that function (presumably a test statistic) returns.  
+    """
+    
+	arr = np.array(data)
+	sample = np.random.choice(arr, size=Nsize)
+	return function(sample, *args, **kwargs)
+
+
 
 if __name__ == "__main__":
-    if len(argv) > 2:
+    import EMGMM
+    """
+    Currently this code does not run - providing the EMGMM bootstrap iterations with the arbitrary
+    parameters it needs has proved challening.  
+    """
+    cols = ['callhome', 'TAL', 'WSJ']
+    if len(argv) > 3:
         model_descrip = argv[2]
         model_descrip = re.sub(" ", "_", model_descrip)
         logger.debug("Beginning "+model_descrip+" iteration of model")
@@ -185,11 +177,15 @@ if __name__ == "__main__":
             create_erpaprobs(model_descrip, argv[3:])
         if argv[1] == "bootstrap":
             erpaprobs = pd.read_csv(argv[3])
-            run_bootstrap(25,1000,erpaprobs, model_descrip)
-    elif argv[1] == "test":
-        time.sleep(45)
-        logger.debug("This test was successful")
-        handler.flush()
+            results = run_bootstrap(50, 1000, erpaprobs[['id', 'pedantry_score']], EMGMM.GaussianMixture.fit, -4, 4, .1, 1)
+            results.to_csv("EMGMM_raw_results.csv")
+
+            
+    elif argv[1] == "test_with_data":
+        #Testing module to try to get at least a single iteration working - not     currently passing this test.
+        erpaprobs = pd.read_csv(argv[2])
+        results = run_bootstrap(5, 2, erpaprobs[['id', 'pedantry_score']], EMGMM.GaussianMixture.fit, -4, 4, .1, 1, num_restarts=2)
+        results.to_csv("EMGMM_raw_results.csv")
     else:
         print "Terminating after doing basically nothing, so oops"
     
